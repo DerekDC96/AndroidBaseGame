@@ -10,6 +10,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TheBaseGame">
         <activity
+            android:name=".UI.ViewRecordActivity"
+            android:exported="false" />
+        <activity
+            android:name=".UI.ScoreScreenActivity"
+            android:exported="false" />
+        <activity
             android:name=".UI.GameActivity"
             android:exported="false" />
         <activity

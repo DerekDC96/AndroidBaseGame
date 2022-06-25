@@ -28,14 +28,14 @@ public class CustomizeGameActivity extends AppCompatActivity {
         Button hard = findViewById(R.id.hard);
         easy.setBackgroundColor(Color.BLUE);
         int[] mode = new int[2]; // array allows inner classes to modify outer variables
-        mode[0] = 0;
+        mode[0] = 3;
         easy.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 easy.setBackgroundColor(Color.BLUE);
                 med.setBackgroundColor(Color.RED);
                 hard.setBackgroundColor(Color.RED);
-                mode[0] = 0;
+                mode[0] = 3;
             }
         });
         med.setOnClickListener(new View.OnClickListener() {
@@ -44,7 +44,7 @@ public class CustomizeGameActivity extends AppCompatActivity {
                 easy.setBackgroundColor(Color.RED);
                 med.setBackgroundColor(Color.BLUE);
                 hard.setBackgroundColor(Color.RED);
-                mode[0] = 1;
+                mode[0] = 2;
             }
         });
         hard.setOnClickListener(new View.OnClickListener() {
@@ -79,7 +79,6 @@ public class CustomizeGameActivity extends AppCompatActivity {
         startGame.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //mode[1] = (int)spinner.getSelectedItem();
                 Intent intent = new Intent(CustomizeGameActivity.this, GameActivity.class);
                 Game g = new Game(mode[1], mode[0]);
                 intent.putExtra("game", g);

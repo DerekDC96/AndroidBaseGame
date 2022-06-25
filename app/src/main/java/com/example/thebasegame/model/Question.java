@@ -1,6 +1,10 @@
 package com.example.thebasegame.model;
 
-public class Question {
+import android.util.Log;
+
+import java.io.Serializable;
+
+public class Question implements Serializable {
 
     // diff is the maximum log distance from correct answer to receive any points, 0 is hardest
     private int diff;
@@ -53,13 +57,13 @@ public class Question {
     // EFFECTS: returns the scored points for a given answer
     //          which depends on the logarithmic distances
     public int calculateScore(String answer) {
-        int ans = baseToTen(answer);
 
-        double dist = logDist(ans);
+        double dist = logDist(Integer.valueOf(answer));
+
         if (dist >= diff) {
             return 0;
         } else {
-            return (int)(value - (dist/diff * value));
+            return (int)(value - (dist* value/diff));
         }
     }
 
@@ -71,6 +75,6 @@ public class Question {
 
     @Override
     public String toString() {
-        return "What is " + number + "?";
+        return "What is " + tenToBase() + "?";
     }
 }

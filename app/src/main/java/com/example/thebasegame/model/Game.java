@@ -1,5 +1,7 @@
 package com.example.thebasegame.model;
 
+import android.util.Log;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 
@@ -13,31 +15,36 @@ public class Game implements Serializable {
 
     private int score;
     private int maxScore = 100;
-    private int curQuestion;
+    private int curQuestionIndex;
 
     // EFFECTS: Constructs a game with given base number
     public Game(int base, int diff) {
         this.diff = diff;
         this.base = base;
-        this.bits = 8;
+        this.bits = 4;
         questionList = new ArrayList<>(NUMQUESTIONS);
-        curQuestion = 0;
+        curQuestionIndex = 0;
         generateQuestions();
     }
 
     // REQUIRES: curQuestion is valid index
     // MODIFIES:this
-    // EFFECTS: returns the next question
-    public Question getNextQuestion() {
-        Question ret = questionList.get(curQuestion);
-        curQuestion++;
-        return ret;
+    // EFFECTS: returns the curr question
+    public Question getCurrQuestion() {
+        return questionList.get(curQuestionIndex);
+
     }
 
     // MODIFIES: this
-    // EFFECTS: increases curQuestion by 1 and adds calculated score from question to score
+    // EFFECTS: adds calculated score from question to score
     public void processAnswer(String answer) {
-        score += getNextQuestion().calculateScore(answer);
+        int calc = getCurrQuestion().calculateScore(answer);
+
+        score += calc;
+    }
+
+    public void nextQuestion() {
+        curQuestionIndex++;
     }
 
 
@@ -51,5 +58,23 @@ public class Game implements Serializable {
         return score;
     }
 
+    public int getNUMQUESTIONS() {
+        return NUMQUESTIONS;
+    }
 
+    public int getBase() {
+        return base;
+    }
+
+    public int getMaxScore() {
+        return maxScore;
+    }
+
+    public int getCurrQuestionIndex() {
+        return curQuestionIndex;
+    }
+
+    public int getDiff() {
+        return diff;
+    }
 }
