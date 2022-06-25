@@ -2,9 +2,11 @@ package com.example.thebasegame.UI;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -12,6 +14,12 @@ import android.widget.TextView;
 import com.example.thebasegame.R;
 import com.example.thebasegame.model.Game;
 import com.example.thebasegame.model.Question;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class GameActivity extends AppCompatActivity implements View.OnClickListener {
     Button[] buttons;
@@ -40,6 +48,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         baseText.setText("Base " + String.valueOf(g.getBase()));
         questionText = findViewById(R.id.givenNumber);
         enteredText = findViewById(R.id.entered);
+        gameProgressText= findViewById(R.id.game_progress);
 
         buttons = new Button[11];
         buttons[0] = findViewById(R.id.zero);buttons[0].setOnClickListener(this);
@@ -104,6 +113,17 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
 
     public void updateContent() {
         if (g.getCurrQuestionIndex() == g.getNUMQUESTIONS()) {
+
+            // write to file
+            String fileName = "record_" + g.getBase()  + "_" + g.getDiff() + ".txt";
+            String output = g.getScore() + "," + LocalDateTime.now() + "\n";
+            try {
+                FileOutputStream fos = this.openFileOutput(fileName, Context.MODE_APPEND);
+                fos.write(output.getBytes());
+            } catch (Exception e) {
+                Log.e("file", "exception", e);
+            }
+
             Intent intent = new Intent(GameActivity.this, ScoreScreenActivity.class);
             intent.putExtra("game", g);
             startActivity(intent);
@@ -113,7 +133,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
             enteredText.setText("");
             q = g.getCurrQuestion();
             questionText.setText(q.toString());
-            cd = new CountDownTimer(10000, 1000) {
+            cd = new CountDownTimer(1000, 1000) {
 
                 @Override
                 public void onTick(long millisUntilFinished) {
@@ -123,7 +143,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
                 @Override
                 public void onFinish() {
                     String entered = enteredText.getText().toString();
-                    if (entered != "") {
+                    if (!entered.equals("")) {
                         g.processAnswer(entered);
                     }
                     g.nextQuestion();
