@@ -23,14 +23,15 @@ public class ScoreScreenActivity extends AppCompatActivity {
         Game g = (Game)extras.get("game");
 
         TextView scoreText = findViewById(R.id.score_text);
-        scoreText.setText("sdf");
+        scoreText.setText("TODO score screen text");
 
         Button viewRecords = findViewById(R.id.view_records);
         viewRecords.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-
+                Intent intent = new Intent(ScoreScreenActivity.this, ViewRecordActivity.class);
+                intent.putExtra("game", g);
+                startActivity(intent);
             }
         });
 

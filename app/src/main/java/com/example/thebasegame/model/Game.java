@@ -1,14 +1,12 @@
 package com.example.thebasegame.model;
 
-import android.util.Log;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 
 public class Game implements Serializable {
     final int NUMQUESTIONS = 5;
 
-    private int diff;
+    private Diff diff;
     private int bits;
     private int base;
     private ArrayList<Question> questionList;
@@ -18,7 +16,7 @@ public class Game implements Serializable {
     private int curQuestionIndex;
 
     // EFFECTS: Constructs a game with given base number
-    public Game(int base, int diff) {
+    public Game(int base, Diff diff) {
         this.diff = diff;
         this.base = base;
         this.bits = 4;
@@ -74,7 +72,7 @@ public class Game implements Serializable {
         return curQuestionIndex;
     }
 
-    public int getDiff() {
+    public Diff getDiff() {
         return diff;
     }
 }

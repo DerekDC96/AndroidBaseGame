@@ -18,6 +18,7 @@ import com.example.thebasegame.model.Question;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -113,13 +114,20 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
 
     public void updateContent() {
         if (g.getCurrQuestionIndex() == g.getNUMQUESTIONS()) {
-
+            File dir = new File(getFilesDir() + File.separator + g.getDiff());
+            if (!dir.exists()) {
+                boolean b = dir.mkdirs();
+            }
             // write to file
-            String fileName = "record_" + g.getBase()  + "_" + g.getDiff() + ".txt";
+            String fileName =  g.getBase() + ".txt";
             String output = g.getScore() + "," + LocalDateTime.now() + "\n";
             try {
-                FileOutputStream fos = this.openFileOutput(fileName, Context.MODE_APPEND);
-                fos.write(output.getBytes());
+                File f = new File(dir,fileName);
+                if (!f.exists()) {
+                    f.createNewFile();
+                }
+                FileWriter fileWriter = new FileWriter(fileName,true);
+                fileWriter.write(output);
             } catch (Exception e) {
                 Log.e("file", "exception", e);
             }

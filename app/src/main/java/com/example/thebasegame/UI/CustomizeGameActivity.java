@@ -13,6 +13,7 @@ import android.widget.Button;
 import android.widget.Spinner;
 
 import com.example.thebasegame.R;
+import com.example.thebasegame.model.Diff;
 import com.example.thebasegame.model.Game;
 
 public class CustomizeGameActivity extends AppCompatActivity {
@@ -80,7 +81,7 @@ public class CustomizeGameActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(CustomizeGameActivity.this, GameActivity.class);
-                Game g = new Game(mode[1], mode[0]);
+                Game g = new Game(mode[1], Diff.getDiff(mode[0]));
                 intent.putExtra("game", g);
                 startActivity(intent);
             }

@@ -7,7 +7,7 @@ import java.io.Serializable;
 public class Question implements Serializable {
 
     // diff is the maximum log distance from correct answer to receive any points, 0 is hardest
-    private int diff;
+    private Diff diff;
 
     private int base;
     private int number;
@@ -15,7 +15,7 @@ public class Question implements Serializable {
     private double value;
 
 
-    public Question(int base, int number, int bits, double value, int diff) {
+    public Question(int base, int number, int bits, double value, Diff diff) {
         this.base = base;
         this.bits = bits;
         this.value = value;
@@ -60,10 +60,10 @@ public class Question implements Serializable {
 
         double dist = logDist(Integer.valueOf(answer));
 
-        if (dist >= diff) {
+        if (dist >= diff.toInt()) {
             return 0;
         } else {
-            return (int)(value - (dist* value/diff));
+            return (int)(value - (dist* value/diff.toInt()));
         }
     }
 
