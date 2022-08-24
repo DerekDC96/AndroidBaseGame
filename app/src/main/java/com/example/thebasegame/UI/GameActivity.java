@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -121,15 +122,18 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
             // write to file
             String fileName =  g.getBase() + ".txt";
             String output = g.getScore() + "," + LocalDateTime.now() + "\n";
+            FileWriter fileWriter = null;
             try {
                 File f = new File(dir,fileName);
                 if (!f.exists()) {
                     f.createNewFile();
                 }
-                FileWriter fileWriter = new FileWriter(fileName,true);
+                fileWriter = new FileWriter(getFilesDir() + File.separator + g.getDiff() + File.separator + fileName,true);
                 fileWriter.write(output);
-            } catch (Exception e) {
-                Log.e("file", "exception", e);
+            } catch (IOException e) {
+                Log.e("GameActivity", "updateContent", e);
+            } finally {
+                if (fileWriter != null) try { fileWriter.close(); } catch (IOException ignore) {}
             }
 
             Intent intent = new Intent(GameActivity.this, ScoreScreenActivity.class);

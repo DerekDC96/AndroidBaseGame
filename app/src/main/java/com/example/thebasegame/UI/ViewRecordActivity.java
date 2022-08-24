@@ -20,6 +20,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Array;
@@ -35,31 +38,36 @@ import kotlin.Triple;
 public class ViewRecordActivity extends AppCompatActivity {
 
     Spinner spinner;
-    //Table table;
     Diff diff;
+    int base;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.view_record);
+
+        Log.i("view", "huh1");
         File dir = getFilesDir();
         File[] files = dir.listFiles();
-
 
         Button easyButton = findViewById(R.id.viewEasy);
         Button medButton = findViewById(R.id.viewMed);
         Button hardButton = findViewById(R.id.viewHard);
+
+        // by default spinner is populated with fixed values from bases_array
         spinner = findViewById(R.id.baseRecords);
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
                 R.array.bases_array, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
 
-        try {
-            // below two lines will throw exception if ViewRecordActivity is accessed from mainActivity
-            Bundle extras = getIntent().getExtras();
-            Game g = (Game)extras.get("game");
+        // by default difficulty is easy
+        this.diff = Diff.EASY;
 
+        Bundle extras = getIntent().getExtras();
+        // not null when view records is accessed from ScoreScreenActivity, in which extras are passed
+        if (extras != null) {
+            Game g = (Game) extras.get("game");
             // color correct difficulty button from recent game
             switch (g.getDiff()) {
                 case MED:
@@ -72,20 +80,20 @@ public class ViewRecordActivity extends AppCompatActivity {
                     easyButton.setBackgroundColor(Color.RED);
                     break;
             }
-            updateContent(g.getDiff());
-            updateContent(g.getBase());
-
-        } catch (Exception e) {
-
+            this.diff = g.getDiff();
+            this.base = g.getBase();
+            updateContentDiff();
+            updateContentBase();
         }
 
         easyButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                easyButton.setBackgroundColor(Color.BLUE);
-                medButton.setBackgroundColor(Color.RED);
-                hardButton.setBackgroundColor(Color.RED);
-                updateContent(Diff.EASY);
+                easyButton.setBackgroundColor(Color.RED);
+                medButton.setBackgroundColor(Color.BLUE);
+                hardButton.setBackgroundColor(Color.BLUE);
+                diff = Diff.EASY;
+                updateContentDiff();
             }
         });
 
@@ -94,8 +102,9 @@ public class ViewRecordActivity extends AppCompatActivity {
             public void onClick(View v) {
                 easyButton.setBackgroundColor(Color.BLUE);
                 medButton.setBackgroundColor(Color.RED);
-                hardButton.setBackgroundColor(Color.RED);
-                updateContent(Diff.MED);
+                hardButton.setBackgroundColor(Color.BLUE);
+                diff = Diff.MED;
+                updateContentDiff();
             }
         });
 
@@ -103,40 +112,38 @@ public class ViewRecordActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 easyButton.setBackgroundColor(Color.BLUE);
-                medButton.setBackgroundColor(Color.RED);
+                medButton.setBackgroundColor(Color.BLUE);
                 hardButton.setBackgroundColor(Color.RED);
-                updateContent(Diff.HARD);
+                diff = Diff.HARD;
+                updateContentDiff();
             }
         });
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                int base = Integer.parseInt(spinner.getSelectedItem().toString());
-                updateContent(base);
+                base = Integer.parseInt(spinner.getSelectedItem().toString());
+                updateContentBase();
             }
-
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
+            public void onNothingSelected(AdapterView<?> parent) {}
         });
-
-
     }
 
-    // EFFECTS: updates spinner when difficulty button is clicked
-    private void updateContent(Diff d) {
-        this.diff = d;
+    // EFFECTS: updates spinner to match bases with records in folder of this.diff
+    private void updateContentDiff() {
         try {
-            // create a folder for the difficulty
-            File subDir = new File(diff.toString());
-            File[] files = subDir.listFiles();
+            // pathname based on diff specified
+            File dir = new File(getFilesDir() + File.separator + diff.toString());
+            File[] files = dir.listFiles();
+
             String[] arr = new String[files.length];
-            // parse files in subdir for names to put into array
+
+            // parse files in subdir for base names to put into array
             for (int i = 0; i < files.length; i++) {
                 arr[i] = files[i].getName().replace(".txt", "");
             }
+
             ArrayAdapter<String> adapter = new ArrayAdapter<>(
                     ViewRecordActivity.this,
                     android.R.layout.simple_spinner_item,
@@ -144,31 +151,31 @@ public class ViewRecordActivity extends AppCompatActivity {
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             spinner.setAdapter(adapter);
         } catch (Exception e) {
-            Log.e("Exception", "updateContent1", e);
+            Log.e("ViewRecordActivity", "updateContent1", e);
         }
     }
 
 
     // EFFECTS: updates table when spinner item is clicked, sorting the table by
     //          score and date, and updates file
-    private void updateContent(int base) {
+    // file consists of two sections
+        // first section:
+            // sorted with score(Integer), datetime(LocalDateTime), rank(Integer)
+        // second section:
+            // unsorted with score(Integer), datetime(LocalDateTime)
+    private void updateContentBase() {
+        ArrayList<Pair<Integer, LocalDateTime>> unsorted = new ArrayList<>();
+        ArrayList<Pair<Integer, LocalDateTime>> sorted = new ArrayList<>();
         try {
+
             // open file
-            String pathName = getFilesDir() + File.separator + base + ".txt";
-            FileInputStream fis = openFileInput(pathName);
+            File dir = new File(getFilesDir() + File.separator + diff);
+//            if (!dir.exists()) {
+//                boolean b = dir.mkdirs();
+//            }
 
-            // two different arraysLists, one with previously labeled (sorted) entries = triple
-            // other with non-labeled entries = pair
-            // each row is a tuple (pair or trip)
-
-
-            ArrayList<Pair<Integer, LocalDateTime>> unsorted = new ArrayList<>();
-            ArrayList<Pair<Integer, LocalDateTime>> sorted = new ArrayList<>();
-
-            InputStreamReader inputStreamReader =
-                    new InputStreamReader(fis, StandardCharsets.UTF_8);
-
-            BufferedReader reader = new BufferedReader(inputStreamReader);
+            BufferedReader reader =
+                    new BufferedReader(new FileReader(getFilesDir() + File.separator + diff + File.separator + base + ".txt"));
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
             String line = reader.readLine();
@@ -183,43 +190,99 @@ public class ViewRecordActivity extends AppCompatActivity {
                 }
                 line = reader.readLine();
             }
-
-
-            // sort the unsorted
-            unsorted.sort(new Comparator<Pair<Integer, LocalDateTime>>() {
-                @Override
-                public int compare(Pair<Integer, LocalDateTime> o1, Pair<Integer, LocalDateTime> o2) {
-                    // if equal
-                    if (Integer.compare(o1.first, o2.first) == 0) {
-                        // compare on datetime
-                        return o1.second.compareTo(o2.second);
-                    } else {
-                        return Integer.compare(o1.first, o2.first);
-                    }
-                }
-            });
-
-            // merge the two sorted lists
-            mergeSortedLists(sorted, unsorted);
-
-
         } catch (FileNotFoundException e) {
-            Log.e("Exception", "updateContent2", e);
+            Log.e("ViewRecordActivity", "updateContent2", e);
         } catch (IOException e) {
-            Log.e("Exception", "updateContent2", e);
+            Log.e("ViewRecordActivity", "updateContent2", e);
         }
+
+        // merge the two sorted lists
+        ArrayList<Pair<Integer, LocalDateTime>> merged = mergeSortedLists(sorted, unsorted);
+
+        // write to file
+        File dir = new File(getFilesDir() + File.separator + diff);
+        if (!dir.exists()) {
+            boolean b = dir.mkdirs();
+        }
+        String fileName =  base + ".txt";
+        FileWriter fileWriter = null;
+        try {
+            File f = new File(dir,fileName);
+            if (!f.exists()) {
+                f.createNewFile();
+            }
+            fileWriter = new FileWriter(getFilesDir() + File.separator + diff + File.separator + fileName,false);
+            int i = 0;
+            for (Pair<Integer, LocalDateTime> entry : merged) {
+                String output = entry.first + "," + entry.second + "," + i;
+                fileWriter.write(output);
+                i++;
+            }
+        } catch (IOException e) {
+            Log.e("GameActivity", "updateContent2", e);
+        } finally {
+            if (fileWriter != null) try { fileWriter.close(); } catch (IOException ignore) {}
+        }
+
+
+
+
+        // update table
+
     }
 
-    private List<Pair<Integer, LocalDateTime>>
-    mergeSortedLists(List<Pair<Integer, LocalDateTime>> l1, List<Pair<Integer, LocalDateTime>> l2) {
+    // given l1 (sorted), and l2 (unsorted)
+    // sorts from scores(high to low), then on dateTime(early to late)
+    private ArrayList<Pair<Integer, LocalDateTime>>
+    mergeSortedLists(ArrayList<Pair<Integer, LocalDateTime>> l1, ArrayList<Pair<Integer, LocalDateTime>> l2) {
+        // sort the unsorted
+        l2.sort(new Comparator<Pair<Integer, LocalDateTime>>() {
+            @Override
+            public int compare(Pair<Integer, LocalDateTime> o1, Pair<Integer, LocalDateTime> o2) {
+                // if equal
+                if (Integer.compare(o1.first, o2.first) == 0) {
+                    // compare on datetime
+                    return o1.second.compareTo(o2.second);
+                } else {
+                    return Integer.compare(o1.first, o2.first);
+                }
+            }
+        });
+
         ArrayList<Pair<Integer, LocalDateTime>> mergedList = new ArrayList<>();
 
         int m = l1.size(); int n = l2.size();
         int i = 0; int j = 0;
+
         while (i < m && j < n) {
-            //if (l1 > l2);
+            if (l1.get(i).first > l2.get(j).first) {
+                mergedList.add(l1.get(i));
+                i++;
+            } else if (l1.get(i).first < l2.get(j).first) {
+                mergedList.add(l2.get(j));
+                j++;
+            } else {
+                if (l1.get(i).second.isAfter(l2.get(j).second)) {
+                    mergedList.add(l2.get(j));
+                    j++;
+                } else {
+                    mergedList.add(l1.get(i));
+                    i++;
+                }
+            }
         }
-        return null;
+        if (i == m) {
+            while (j < n) {
+                mergedList.add(l2.get(j));
+                j++;
+            }
+        } else {
+            while (i < m) {
+                mergedList.add(l1.get(i));
+                i++;
+            }
+        }
+        return mergedList;
     }
 
 }
