@@ -18,22 +18,14 @@ import com.example.thebasegame.model.Game;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.lang.reflect.Array;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
-
-import kotlin.Triple;
 
 public class ViewRecordActivity extends AppCompatActivity {
 
@@ -41,12 +33,14 @@ public class ViewRecordActivity extends AppCompatActivity {
     Diff diff;
     int base;
 
+    ArrayList<Pair<Integer, LocalDateTime>> unsorted;
+    ArrayList<Pair<Integer, LocalDateTime>> sorted;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.view_record);
 
-        Log.i("view", "huh1");
         File dir = getFilesDir();
         File[] files = dir.listFiles();
 
@@ -164,16 +158,82 @@ public class ViewRecordActivity extends AppCompatActivity {
         // second section:
             // unsorted with score(Integer), datetime(LocalDateTime)
     private void updateContentBase() {
-        ArrayList<Pair<Integer, LocalDateTime>> unsorted = new ArrayList<>();
-        ArrayList<Pair<Integer, LocalDateTime>> sorted = new ArrayList<>();
+        readFileIntoArrays();
+        // merge the two sorted lists
+        ArrayList<Pair<Integer, LocalDateTime>> merged = mergeSortedLists();
+
+        // write merged list to file
+        updateFile(merged);
+
+        // update table with merged list
+        updateTable(merged);
+    }
+
+    // EFFECTS:
+    // given l1 (sorted), and l2 (unsorted)
+    // sorts from scores(high to low), then on dateTime(early to late)
+    // returns a sorted list
+    private ArrayList<Pair<Integer, LocalDateTime>>
+    mergeSortedLists() {
+
+        // sort the unsorted
+        unsorted.sort(new Comparator<Pair<Integer, LocalDateTime>>() {
+            @Override
+            public int compare(Pair<Integer, LocalDateTime> o1, Pair<Integer, LocalDateTime> o2) {
+                // if equal
+                if (Integer.compare(o1.first, o2.first) == 0) {
+                    // compare on datetime
+                    return o1.second.compareTo(o2.second);
+                } else {
+                    return Integer.compare(o2.first, o1.first);
+                }
+            }
+        });
+
+        ArrayList<Pair<Integer, LocalDateTime>> mergedList = new ArrayList<>();
+
+        int m = sorted.size(); int n = unsorted.size();
+        int i = 0; int j = 0;
+
+        while (i < m && j < n) {
+            if (sorted.get(i).first > unsorted.get(j).first) {
+                mergedList.add(sorted.get(i));
+                i++;
+            } else if (sorted.get(i).first < unsorted.get(j).first) {
+                mergedList.add(unsorted.get(j));
+                j++;
+            } else {
+                if (sorted.get(i).second.isAfter(unsorted.get(j).second)) {
+                    mergedList.add(unsorted.get(j));
+                    j++;
+                } else {
+                    mergedList.add(sorted.get(i));
+                    i++;
+                }
+            }
+        }
+        if (i == m) {
+            while (j < n) {
+                mergedList.add(unsorted.get(j));
+                j++;
+            }
+        } else {
+            while (i < m) {
+                mergedList.add(sorted.get(i));
+                i++;
+            }
+        }
+        return mergedList;
+    }
+
+    // EFFECTS:
+    // reads file specified by pathname, which is based on this.diff and this.base
+    // and updates sorted and unsorted with the contents of the file
+    private void readFileIntoArrays() {
+        unsorted = new ArrayList<>();
+        sorted = new ArrayList<>();
         try {
-
-            // open file
-            File dir = new File(getFilesDir() + File.separator + diff);
-//            if (!dir.exists()) {
-//                boolean b = dir.mkdirs();
-//            }
-
+            // read file
             BufferedReader reader =
                     new BufferedReader(new FileReader(getFilesDir() + File.separator + diff + File.separator + base + ".txt"));
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -195,14 +255,13 @@ public class ViewRecordActivity extends AppCompatActivity {
         } catch (IOException e) {
             Log.e("ViewRecordActivity", "updateContent2", e);
         }
+    }
 
-        // merge the two sorted lists
-        ArrayList<Pair<Integer, LocalDateTime>> merged = mergeSortedLists(sorted, unsorted);
-
-        // write to file
+    // EFFECTS: writes to the file with the sorted list
+    private void updateFile(ArrayList<Pair<Integer, LocalDateTime>> ranking) {
         File dir = new File(getFilesDir() + File.separator + diff);
         if (!dir.exists()) {
-            boolean b = dir.mkdirs();
+            dir.mkdirs();
         }
         String fileName =  base + ".txt";
         FileWriter fileWriter = null;
@@ -212,77 +271,40 @@ public class ViewRecordActivity extends AppCompatActivity {
                 f.createNewFile();
             }
             fileWriter = new FileWriter(getFilesDir() + File.separator + diff + File.separator + fileName,false);
-            int i = 0;
-            for (Pair<Integer, LocalDateTime> entry : merged) {
-                String output = entry.first + "," + entry.second + "," + i;
+
+            // formatting to match reader parser
+            int rank = 1;
+            for (Pair<Integer, LocalDateTime> entry : ranking) {
+                String output = entry.first + "," + entry.second + "," + rank + "\n";
                 fileWriter.write(output);
-                i++;
+                rank++;
             }
         } catch (IOException e) {
             Log.e("GameActivity", "updateContent2", e);
         } finally {
             if (fileWriter != null) try { fileWriter.close(); } catch (IOException ignore) {}
         }
-
-
-
-
-        // update table
-
     }
 
-    // given l1 (sorted), and l2 (unsorted)
-    // sorts from scores(high to low), then on dateTime(early to late)
-    private ArrayList<Pair<Integer, LocalDateTime>>
-    mergeSortedLists(ArrayList<Pair<Integer, LocalDateTime>> l1, ArrayList<Pair<Integer, LocalDateTime>> l2) {
-        // sort the unsorted
-        l2.sort(new Comparator<Pair<Integer, LocalDateTime>>() {
-            @Override
-            public int compare(Pair<Integer, LocalDateTime> o1, Pair<Integer, LocalDateTime> o2) {
-                // if equal
-                if (Integer.compare(o1.first, o2.first) == 0) {
-                    // compare on datetime
-                    return o1.second.compareTo(o2.second);
-                } else {
-                    return Integer.compare(o1.first, o2.first);
-                }
+    // EFFECTS: given a ranking list, displays the first the 10 entries in the table GUI
+        // the list should be sorted
+    private void updateTable(ArrayList<Pair<Integer, LocalDateTime>> ranking) {
+        if (ranking.size() < 10) {
+            // populate table with values
+            for (int i = 0; i < ranking.size(); i++) {
+
             }
-        });
+            // populate empty entries with n/a
+            for (int i = ranking.size(); i < 10; i++) {
 
-        ArrayList<Pair<Integer, LocalDateTime>> mergedList = new ArrayList<>();
-
-        int m = l1.size(); int n = l2.size();
-        int i = 0; int j = 0;
-
-        while (i < m && j < n) {
-            if (l1.get(i).first > l2.get(j).first) {
-                mergedList.add(l1.get(i));
-                i++;
-            } else if (l1.get(i).first < l2.get(j).first) {
-                mergedList.add(l2.get(j));
-                j++;
-            } else {
-                if (l1.get(i).second.isAfter(l2.get(j).second)) {
-                    mergedList.add(l2.get(j));
-                    j++;
-                } else {
-                    mergedList.add(l1.get(i));
-                    i++;
-                }
-            }
-        }
-        if (i == m) {
-            while (j < n) {
-                mergedList.add(l2.get(j));
-                j++;
             }
         } else {
-            while (i < m) {
-                mergedList.add(l1.get(i));
-                i++;
+            for (int i = 0; i < 10; i++) {
+
             }
         }
-        return mergedList;
     }
+
+
 
 }
