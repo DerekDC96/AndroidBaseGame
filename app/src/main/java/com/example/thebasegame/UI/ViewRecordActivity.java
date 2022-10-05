@@ -7,10 +7,14 @@ import android.os.Bundle;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
+import android.widget.TableLayout;
+import android.widget.TableRow;
+import android.widget.TextView;
 
 import com.example.thebasegame.R;
 import com.example.thebasegame.model.Diff;
@@ -35,6 +39,8 @@ public class ViewRecordActivity extends AppCompatActivity {
 
     ArrayList<Pair<Integer, LocalDateTime>> unsorted;
     ArrayList<Pair<Integer, LocalDateTime>> sorted;
+
+    TableLayout tl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,6 +128,11 @@ public class ViewRecordActivity extends AppCompatActivity {
             @Override
             public void onNothingSelected(AdapterView<?> parent) {}
         });
+
+        // table setup
+        tl = (TableLayout) findViewById(R.id.main_table);
+        TableRow tr_head = new TableRow(this);
+
     }
 
     // EFFECTS: updates spinner to match bases with records in folder of this.diff
@@ -236,7 +247,6 @@ public class ViewRecordActivity extends AppCompatActivity {
             // read file
             BufferedReader reader =
                     new BufferedReader(new FileReader(getFilesDir() + File.separator + diff + File.separator + base + ".txt"));
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
             String line = reader.readLine();
             while (line != null) {
@@ -286,22 +296,39 @@ public class ViewRecordActivity extends AppCompatActivity {
         }
     }
 
-    // EFFECTS: given a ranking list, displays the first the 10 entries in the table GUI
+    // EFFECTS: given a ranking list, displays the up to 10 entries in the table GUI
         // the list should be sorted
     private void updateTable(ArrayList<Pair<Integer, LocalDateTime>> ranking) {
-        if (ranking.size() < 10) {
-            // populate table with values
-            for (int i = 0; i < ranking.size(); i++) {
+        tl.removeAllViews();
+        int rows = Math.min(10, ranking.size());
+        TextView[] scoreArray = new TextView[rows];
+        TextView[] dateArray = new TextView[rows];
+        TableRow[] trHead = new TableRow[rows];
 
-            }
-            // populate empty entries with n/a
-            for (int i = ranking.size(); i < 10; i++) {
+        for (int i = 0; i < rows; i++) {
+            // create row
+            trHead[i] = new TableRow(this);
+            trHead[i].setId(i+1);
+            trHead[i].setLayoutParams(new TableRow.LayoutParams(
+                    TableRow.LayoutParams.MATCH_PARENT,
+                    TableRow.LayoutParams.WRAP_CONTENT
+            ));
 
-            }
-        } else {
-            for (int i = 0; i < 10; i++) {
+            // modify textViews
+            scoreArray[i] = new TextView(this);
+            dateArray[i] = new TextView(this);
+            scoreArray[i].setId(i+10);
+            dateArray[i].setId(i+100);
+            scoreArray[i].setText(String.valueOf(ranking.get(i).first));
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            dateArray[i].setText(ranking.get(i).second.format(formatter));
 
-            }
+            trHead[i].addView(scoreArray[i]);
+            trHead[i].addView(dateArray[i]);
+
+            tl.addView(trHead[i], new TableLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    TableLayout.LayoutParams.WRAP_CONTENT));
         }
     }
 
